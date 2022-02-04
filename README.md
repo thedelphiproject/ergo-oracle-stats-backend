@@ -5,7 +5,7 @@ Standalone API service providing:
 - [ ] list of known oracle pools
 
 Pool specific data:
-- [ ] creation date
+- [ ] creation date, settings, contract addresses
 - [ ] total number of oracle tokens
 - [ ] activated oracle tokens (used at least once)
 - [ ] timeseries of datapoints
