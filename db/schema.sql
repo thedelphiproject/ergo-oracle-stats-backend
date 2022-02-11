@@ -6,6 +6,40 @@ CREATE SCHEMA delphi;
 
 
 --
+-- Name: insert_datapoints(); Type: PROCEDURE; Schema: delphi; Owner: -
+--
+
+CREATE PROCEDURE delphi.insert_datapoints()
+    LANGUAGE sql
+    AS $$
+with prep as (
+    select 
+        o.box_id
+        ,os.pool_id
+        ,os.oracle_id
+        ,max(o.timestamp) as timestamp
+        ,o.additional_registers->'R4'->>'renderedValue' as r4
+        ,o.additional_registers->'R5'->>'renderedValue' as r5
+        ,o.additional_registers->'R6'->>'renderedValue' as r6        
+    from public.node_outputs o 
+    inner join delphi.oracles os on os.address_hash = o.additional_registers->'R4'->>'renderedValue'
+    inner join delphi.pools p on os.pool_id = p.id and os.participation_token_id = p.participant_token_id
+    inner join public.node_assets a on o.additional_registers->'R5'->>'renderedValue' = a.box_id and a.token_id = p.pool_nft_id
+    group by
+        o.box_id
+        ,os.pool_id
+        ,os.oracle_id
+        ,o.additional_registers->'R4'->>'renderedValue'
+        ,o.additional_registers->'R5'->>'renderedValue'
+        ,o.additional_registers->'R6'->>'renderedValue'
+)
+insert into delphi.datapoints
+select p.box_id,p.pool_id,p.oracle_id,p.timestamp,p.r4,p.r5,p.r6 from prep p
+left outer join delphi.datapoints dp on p.box_id = dp.box_id and p.pool_id = dp.pool_id and p.oracle_id = dp.oracle_id
+$$;
+
+
+--
 -- Name: insert_discovery_datapoint(); Type: PROCEDURE; Schema: delphi; Owner: -
 --
 
@@ -26,8 +60,7 @@ with prep as (
     from public.node_outputs o
     left join public.node_assets a on o.box_id = a.box_id
     left join public.tokens t on a.token_id = t.token_id
-    left join public.node_outputs p_o on o.additional_registers->'R5'->>'renderedValue' = p_o.box_id
-    left join public.node_assets p_a on p_o.box_id = p_a.box_id
+    left join public.node_assets p_a on o.additional_registers->'R5'->>'renderedValue' = p_a.box_id
     left join public.tokens p_t on p_a.token_id = p_t.token_id
     where o.additional_registers->'R4'->>'sigmaType' = 'SGroupElement' and o.additional_registers->'R5'->>'sigmaType' = 'Coll[SByte]' and o.additional_registers->'R6'->>'sigmaType' = 'SLong' and a.value = 1 and p_a.value = 1
     order by o.address,o.additional_registers->'R4'->>'renderedValue',o.timestamp desc
@@ -118,6 +151,30 @@ $$;
 
 
 --
+-- Name: insert_oracles(); Type: PROCEDURE; Schema: delphi; Owner: -
+--
+
+CREATE PROCEDURE delphi.insert_oracles()
+    LANGUAGE sql
+    AS $$
+with prep as (
+    select 
+        p.id as pool_id
+        ,dp.token_id as participation_token_id
+        ,oracle_address
+    from delphi.discovery_datapoints dp
+    inner join delphi.pools p on dp.pool_token_id = p.pool_nft_id 
+    group by p.id, dp.token_id, oracle_address
+)
+insert into delphi.oracles (pool_id,participation_token_id,address_hash)
+select p.pool_id, p.participation_token_id, oracle_address
+from prep p
+left outer join delphi.oracles o on o.participation_token_id = p.participation_token_id and o.pool_id = p.pool_id
+where o.oracle_id is null
+$$;
+
+
+--
 -- Name: insert_pools(); Type: PROCEDURE; Schema: delphi; Owner: -
 --
 
@@ -166,6 +223,21 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: datapoints; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.datapoints (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    oracle_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    r4 text NOT NULL,
+    r5 text NOT NULL,
+    r6 text NOT NULL
+);
+
+
+--
 -- Name: discovery_datapoints; Type: TABLE; Schema: delphi; Owner: -
 --
 
@@ -200,6 +272,35 @@ CREATE TABLE delphi.discovery_live_epoch (
     token_id text NOT NULL,
     token_name text,
     token_description text
+);
+
+
+--
+-- Name: epoch_preps; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.epoch_preps (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    oracle_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    r4 text NOT NULL,
+    r5 text NOT NULL
+);
+
+
+--
+-- Name: live_epochs; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.live_epochs (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    oracle_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    r4 text NOT NULL,
+    r5 text NOT NULL,
+    r6 text NOT NULL
 );
 
 
@@ -270,6 +371,30 @@ SELECT pg_catalog.setval('delphi.oracle_id_seq', 1, true);
 --
 
 SELECT pg_catalog.setval('delphi.pools_id_seq', 1, true);
+
+
+--
+-- Name: datapoints datapoints_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.datapoints
+    ADD CONSTRAINT datapoints_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
+
+
+--
+-- Name: epoch_preps epoch_preps_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.epoch_preps
+    ADD CONSTRAINT epoch_preps_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
+
+
+--
+-- Name: live_epochs live_epochs_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.live_epochs
+    ADD CONSTRAINT live_epochs_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
 
 
 --
