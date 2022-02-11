@@ -51,7 +51,6 @@ with prep as (
     from public.node_outputs o
     left join public.node_assets a on o.box_id = a.box_id
     left join public.tokens t on a.token_id = t.token_id
-    --where address = 'EfS5abyDe4vKFrJ48K5HnwTqa1ksn238bWFPe84bzVvCGvK1h2B7sgWLETtQuWwzVdBaoRZ1HcyzddrxLcsoM5YEy4UnqcLqMU1MDca1kLw9xbazAM6Awo9y6UVWTkQcS97mYkhkmx2Tewg3JntMgzfLWz5mACiEJEv7potayvk6awmLWS36sJMfXWgnEfNiqTyXNiPzt466cgot3GLcEsYXxKzLXyJ9EfvXpjzC2abTMzVSf1e17BHre4zZvDoAeTqr4igV3ubv2PtJjntvF2ibrDLmwwAyANEhw1yt8C8fCidkf3MAoPE6T53hX3Eb2mp3Xofmtrn4qVgmhNonnV8ekWZWvBTxYiNP8Vu5nc6RMDBv7P1c5rRc3tnDMRh2dUcDD7USyoB9YcvioMfAZGMNfLjWqgYu9Ygw2FokGBPThyWrKQ5nkLJvief1eQJg4wZXKdXWAR7VxwNftdZjPCHcmwn6ByRHZo9kb4Emv3rjfZE'
     where additional_registers->'R4'->>'sigmaType' = 'SLong' and additional_registers->'R5'->>'sigmaType' = 'SInt' and a.value = 1 and COALESCE(additional_registers->'R6'->>'sigmaType','') = ''
     order by o.address,o.additional_registers->'R5'->>'renderedValue',o.timestamp desc
 )
@@ -86,7 +85,6 @@ with prep as (
     from public.node_outputs o
     left join public.node_assets a on o.box_id = a.box_id
     left join public.tokens t on a.token_id = t.token_id
-    --where address = 'EfS5abyDe4vKFrJ48K5HnwTqa1ksn238bWFPe84bzVvCGvK1h2B7sgWLETtQuWwzVdBaoRZ1HcyzddrxLcsoM5YEy4UnqcLqMU1MDca1kLw9xbazAM6Awo9y6UVWTkQcS97mYkhkmx2Tewg3JntMgzfLWz5mACiEJEv7potayvk6awmLWS36sJMfXWgnEfNiqTyXNiPzt466cgot3GLcEsYXxKzLXyJ9EfvXpjzC2abTMzVSf1e17BHre4zZvDoAeTqr4igV3ubv2PtJjntvF2ibrDLmwwAyANEhw1yt8C8fCidkf3MAoPE6T53hX3Eb2mp3Xofmtrn4qVgmhNonnV8ekWZWvBTxYiNP8Vu5nc6RMDBv7P1c5rRc3tnDMRh2dUcDD7USyoB9YcvioMfAZGMNfLjWqgYu9Ygw2FokGBPThyWrKQ5nkLJvief1eQJg4wZXKdXWAR7VxwNftdZjPCHcmwn6ByRHZo9kb4Emv3rjfZE'
     where additional_registers->'R4'->>'sigmaType' = 'SLong' and additional_registers->'R5'->>'sigmaType' = 'SInt' and a.value = 1 and additional_registers->'R6'->>'sigmaType' = 'Coll[SByte]'
     order by o.address,o.additional_registers->'R5'->>'renderedValue',o.timestamp desc
 )
