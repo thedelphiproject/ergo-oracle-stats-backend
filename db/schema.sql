@@ -12,6 +12,7 @@ CREATE SCHEMA delphi;
 CREATE PROCEDURE delphi.insert_datapoints()
     LANGUAGE sql
     AS $$
+truncate table delphi.datapoints;    
 with prep as (
     select 
         o.box_id
@@ -157,6 +158,7 @@ $$;
 CREATE PROCEDURE delphi.insert_oracles()
     LANGUAGE sql
     AS $$
+truncate table delphi.oracles;    
 with prep as (
     select 
         p.id as pool_id
@@ -181,6 +183,7 @@ $$;
 CREATE PROCEDURE delphi.insert_pools()
     LANGUAGE sql
     AS $$
+truncate table delphi.pools;    
 with discovery_epoch_prep as (
     select  epoch_prep_address
     ,token_id
