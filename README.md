@@ -11,13 +11,13 @@ Pool specific data:
 - [x] timeseries of datapoints
 - [ ] total funding and spending to date
 - [x] number of datapoints posted to date
-- [ ] timeseries of active oracles (oracles submitting a datapoint)
+- [x] timeseries of active oracles (oracles submitting a datapoint)
 - [ ] timeseries of rejected datapoints
 - [ ] timeseries of smartcontracts using a pool
 
 Oracle specific data (for a given pool):
-- [ ] first posting date
-- [ ] last posting date
+- [x] first posting date
+- [x] last posting date
 - [x] number of datapoints submitted to date
 - [ ] number of rejected datapoints to date
 - [ ] number of collections to date
