@@ -5,7 +5,6 @@ Description: WORK IN PROGRESS
 
 /* DELPHI */
 -- list of known oracle pools
--- need associated p2pk address with each oracle hash
 select *
 from delphi.pools
 ;
@@ -44,6 +43,7 @@ from delphi.datapoints
 group by 1,2,3
 order by 2, 1
 limit 5;
+
 
 
 
