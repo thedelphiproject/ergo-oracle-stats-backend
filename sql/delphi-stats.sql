@@ -7,8 +7,8 @@ Description: WORK IN PROGRESS
 -- list of known oracle pools
 -- need associated p2pk address with each oracle hash
 select *
-from delphi.oracles
-limit 5;
+from delphi.pools
+;
 
 
 
