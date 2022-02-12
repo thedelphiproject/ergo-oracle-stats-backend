@@ -9,10 +9,217 @@ CREATE SCHEMA delphi;
 -- Name: insert_datapoints(); Type: PROCEDURE; Schema: delphi; Owner: -
 --
 
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: datapoints; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.datapoints (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    oracle_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    r4 text NOT NULL,
+    r5 text NOT NULL,
+    r6 text NOT NULL
+);
+
+
+--
+-- Name: discovery_datapoints; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.discovery_datapoints (
+    datapoint_address text NOT NULL,
+    oracle_address text NOT NULL,
+    token_id text NOT NULL,
+    token_name text,
+    token_description text,
+    pool_token_id text
+);
+
+
+--
+-- Name: discovery_epoch_prep; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.discovery_epoch_prep (
+    epoch_prep_address text NOT NULL,
+    token_id text NOT NULL,
+    token_name text,
+    token_description text
+);
+
+
+--
+-- Name: discovery_live_epoch; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.discovery_live_epoch (
+    live_epoch_address text NOT NULL,
+    token_id text NOT NULL,
+    token_name text,
+    token_description text
+);
+
+
+--
+-- Name: epoch_preps; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.epoch_preps (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    r4 text NOT NULL,
+    r5 text NOT NULL,
+    value bigint
+);
+
+
+--
+-- Name: live_epochs; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.live_epochs (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    r4 text NOT NULL,
+    r5 text NOT NULL,
+    r6 text NOT NULL
+);
+
+
+--
+-- Name: oracle_addresses; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.oracle_addresses (
+    oracle_id integer NOT NULL,
+    address text NOT NULL
+);
+
+
+--
+-- Name: oracle_id_seq; Type: SEQUENCE; Schema: delphi; Owner: -
+--
+
+CREATE SEQUENCE delphi.oracle_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: oracles; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.oracles (
+    pool_id integer NOT NULL,
+    oracle_id integer DEFAULT nextval('delphi.oracle_id_seq'::regclass) NOT NULL,
+    participation_token_id text NOT NULL,
+    address_hash text NOT NULL
+);
+
+
+--
+-- Name: pool_deposits; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.pool_deposits (
+    box_id text NOT NULL,
+    pool_id integer NOT NULL,
+    "timestamp" bigint NOT NULL,
+    value bigint
+);
+
+
+--
+-- Name: pools_id_seq; Type: SEQUENCE; Schema: delphi; Owner: -
+--
+
+CREATE SEQUENCE delphi.pools_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pools; Type: TABLE; Schema: delphi; Owner: -
+--
+
+CREATE TABLE delphi.pools (
+    id integer DEFAULT nextval('delphi.pools_id_seq'::regclass) NOT NULL,
+    name text,
+    datapoint_address text NOT NULL,
+    epoch_prep_address text NOT NULL,
+    live_epoch_address text NOT NULL,
+    deposits_address text,
+    pool_nft_id text NOT NULL,
+    participant_token_id text NOT NULL,
+    deviation_range integer,
+    consensus_number integer,
+    total_participant_tokens integer
+);
+
+--
+-- Name: oracle_id_seq; Type: SEQUENCE SET; Schema: delphi; Owner: -
+--
+
+SELECT pg_catalog.setval('delphi.oracle_id_seq', 1, true);
+
+
+--
+-- Name: pools_id_seq; Type: SEQUENCE SET; Schema: delphi; Owner: -
+--
+
+SELECT pg_catalog.setval('delphi.pools_id_seq', 1, true);
+
+
+--
+-- Name: datapoints datapoints_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.datapoints
+    ADD CONSTRAINT datapoints_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
+
+
+--
+-- Name: oracles oracles_pkey; Type: CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.oracles
+    ADD CONSTRAINT oracles_pkey PRIMARY KEY (pool_id, oracle_id);
+
+
+--
+-- Name: pools pools_pkey; Type: CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.pools
+    ADD CONSTRAINT pools_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oracles oracles_pool_id_fkey; Type: FK CONSTRAINT; Schema: delphi; Owner: -
+--
+
+ALTER TABLE ONLY delphi.oracles
+    ADD CONSTRAINT oracles_pool_id_fkey FOREIGN KEY (pool_id) REFERENCES delphi.pools(id);
+
+
 CREATE PROCEDURE delphi.insert_datapoints()
     LANGUAGE sql
     AS $$
-truncate table delphi.datapoints;    
 with prep as (
     select 
         o.box_id
@@ -63,15 +270,15 @@ with prep as (
     left join public.tokens t on a.token_id = t.token_id
     left join public.node_assets p_a on o.additional_registers->'R5'->>'renderedValue' = p_a.box_id
     left join public.tokens p_t on p_a.token_id = p_t.token_id
-    where o.additional_registers->'R4'->>'sigmaType' = 'SGroupElement' and o.additional_registers->'R5'->>'sigmaType' = 'Coll[SByte]' and o.additional_registers->'R6'->>'sigmaType' = 'SLong' and a.value = 1 and p_a.value = 1
+    where o.additional_registers->'R4'->>'sigmaType' = 'SGroupElement' and o.additional_registers->'R5'->>'sigmaType' = 'Coll[SByte]' and o.additional_registers->'R6'->>'sigmaType' = 'SLong' and a.value = 1 --and p_a.value = 1
     order by o.address,o.additional_registers->'R4'->>'renderedValue',o.timestamp desc
 )
 insert into delphi.discovery_datapoints
 select datapoint_address,oracle_address,token_id,token_name,token_description,pool_token_id
 from prep 
-where r4 = r4_lag 
+where r4 = r4_lag
 group by datapoint_address,oracle_address,token_id,token_name,token_description,pool_token_id
-having count(datapoint_address) > 10
+having count(datapoint_address) > 5
 $$;
 
 
@@ -152,27 +359,106 @@ $$;
 
 
 --
+-- Name: insert_epoch_preps(); Type: PROCEDURE; Schema: delphi; Owner: -
+--
+
+CREATE PROCEDURE delphi.insert_epoch_preps()
+    LANGUAGE sql
+    AS $$
+insert into delphi.epoch_preps
+select o.box_id,p.id,o.timestamp,o.additional_registers->'R4'->'renderedValue',o.additional_registers->'R5'->>'renderedValue',o.value
+from delphi.pools p
+left join public.node_outputs o on p.epoch_prep_address = o.address
+left join delphi.epoch_preps ep on o.box_id = ep.box_id
+where ep.box_id is null
+$$;
+
+
+--
+-- Name: insert_live_epochs(); Type: PROCEDURE; Schema: delphi; Owner: -
+--
+
+CREATE PROCEDURE delphi.insert_live_epochs()
+    LANGUAGE sql
+    AS $$
+insert into delphi.live_epochs
+select o.box_id,p.id,o.timestamp,o.additional_registers->'R4'->'renderedValue',o.additional_registers->'R5'->>'renderedValue',o.additional_registers->'R6'->>'renderedValue' 
+from delphi.pools p
+left join public.node_outputs o on p.live_epoch_address = o.address
+left join delphi.live_epochs ep on o.box_id = ep.box_id
+where ep.box_id is null
+$$;
+
+
+--
+-- Name: insert_oracle_addresses(); Type: PROCEDURE; Schema: delphi; Owner: -
+--
+
+CREATE PROCEDURE delphi.insert_oracle_addresses()
+    LANGUAGE sql
+    AS $$
+insert into delphi.oracle_addresses (oracle_id,address)
+select 
+    --nos.additional_registers #>> '{R4,renderedValue}' as oracle_address
+    o.oracle_id
+    ,nio.address
+from delphi.oracles o
+inner join node_outputs nos on o.address_hash = nos.additional_registers #>> '{R4,renderedValue}'
+join node_transactions txs on txs.id = nos.tx_id
+join node_inputs nis on nis.tx_id = txs.id
+join node_outputs nio on nio.box_id = nis.box_id
+left join delphi.oracle_addresses oa on o.oracle_id = oa.oracle_id
+where length(nio.address) = 51 and oa.oracle_id is null 
+group by 1,2
+$$;
+
+
+--
 -- Name: insert_oracles(); Type: PROCEDURE; Schema: delphi; Owner: -
 --
 
 CREATE PROCEDURE delphi.insert_oracles()
     LANGUAGE sql
     AS $$
-truncate table delphi.oracles;    
-with prep as (
-    select 
-        p.id as pool_id
-        ,dp.token_id as participation_token_id
-        ,oracle_address
+with dp_addr as (
+    select distinct datapoint_address
+    from delphi.discovery_datapoints
+)
+,oracles as (
+    select datapoint_address,o.additional_registers->'R4'->>'renderedValue' as address_hash,t.token_id as participation_token_id from dp_addr da
+    left join public.node_outputs o on da.datapoint_address = o.address
+    left join public.node_assets a on o.box_id = a.box_id
+    left join public.tokens t on a.token_id = t.token_id
+    where o.main_chain and a.value = 1
+    group by 1,2,3
+)
+,pool_mappings as (
+    select distinct dp.datapoint_address,p.id as pool_id 
     from delphi.discovery_datapoints dp
-    inner join delphi.pools p on dp.pool_token_id = p.pool_nft_id 
-    group by p.id, dp.token_id, oracle_address
+    left join delphi.pools p on dp.pool_token_id = p.pool_nft_id
+    where p.id is not null
 )
 insert into delphi.oracles (pool_id,participation_token_id,address_hash)
-select p.pool_id, p.participation_token_id, oracle_address
-from prep p
-left outer join delphi.oracles o on o.participation_token_id = p.participation_token_id and o.pool_id = p.pool_id
-where o.oracle_id is null
+select pm.pool_id,o.participation_token_id,o.address_hash from oracles o
+left join pool_mappings pm on o.datapoint_address = pm.datapoint_address
+left join delphi.oracles ot on pm.pool_id = ot.pool_id and o.address_hash = ot.address_hash
+where pm.pool_id is not null and ot.oracle_id is null
+$$;
+
+
+--
+-- Name: insert_pool_deposits(); Type: PROCEDURE; Schema: delphi; Owner: -
+--
+
+CREATE PROCEDURE delphi.insert_pool_deposits()
+    LANGUAGE sql
+    AS $$
+insert into delphi.pool_deposits
+select o.box_id,p.id,o.timestamp,o.value
+from delphi.pools p
+left join public.node_outputs o on p.deposits_address = o.address
+left join delphi.pool_deposits pd on pd.box_id = o.box_id
+where deposits_address is not null and pd.box_id is null
 $$;
 
 
@@ -183,7 +469,6 @@ $$;
 CREATE PROCEDURE delphi.insert_pools()
     LANGUAGE sql
     AS $$
-truncate table delphi.pools;    
 with discovery_epoch_prep as (
     select  epoch_prep_address
     ,token_id
@@ -208,217 +493,69 @@ with discovery_epoch_prep as (
     from delphi.discovery_datapoints
 )
 ,pools AS (
-    select dep.token_id,dep.token_description,live_epoch_address,epoch_prep_address,datapoint_address,participant_token_id
+    select dep.token_id,dep.token_description,live_epoch_address,epoch_prep_address,datapoint_address,participant_token_id,t.emission_amount
     from discovery_epoch_prep dep
     left join discovery_live_epoch dle on dep.token_id = dle.token_id
     left join discovery_datapoints dd on dep.token_id = dd.pool_token_id
+    left join public.tokens t on dep.token_id = t.token_id
     where dep.rn = 1 and dle.rn = 1 and dd.rn = 1
 )
-insert into delphi.pools (pool_nft_id,name,live_epoch_address,epoch_prep_address,datapoint_address,participant_token_id)
+insert into delphi.pools (pool_nft_id,name,live_epoch_address,epoch_prep_address,datapoint_address,participant_token_id,total_participant_tokens)
 select s.* from pools s
 left outer join delphi.pools t on s.token_id = t.pool_nft_id
 where t.pool_nft_id is null
 $$;
 
 
-SET default_tablespace = '';
-
-SET default_with_oids = false;
-
 --
--- Name: datapoints; Type: TABLE; Schema: delphi; Owner: -
+-- Name: update_pool_deposits_addresses(); Type: PROCEDURE; Schema: delphi; Owner: -
 --
 
-CREATE TABLE delphi.datapoints (
-    box_id text NOT NULL,
-    pool_id integer NOT NULL,
-    oracle_id integer NOT NULL,
-    "timestamp" bigint NOT NULL,
-    r4 text NOT NULL,
-    r5 text NOT NULL,
-    r6 text NOT NULL
-);
-
-
---
--- Name: discovery_datapoints; Type: TABLE; Schema: delphi; Owner: -
---
-
-CREATE TABLE delphi.discovery_datapoints (
-    datapoint_address text NOT NULL,
-    oracle_address text NOT NULL,
-    token_id text NOT NULL,
-    token_name text,
-    token_description text,
-    pool_token_id text
-);
-
-
---
--- Name: discovery_epoch_prep; Type: TABLE; Schema: delphi; Owner: -
---
-
-CREATE TABLE delphi.discovery_epoch_prep (
-    epoch_prep_address text NOT NULL,
-    token_id text NOT NULL,
-    token_name text,
-    token_description text
-);
-
+CREATE PROCEDURE delphi.update_pool_deposits_addresses()
+    LANGUAGE sql
+    AS $$
+-- depends on delphi.epoch_preps
+with prep as (
+    select  box_id
+    ,pool_id
+    ,"timestamp"
+    ,r4
+    ,r5
+    ,value
+    ,lag(value) over (order by timestamp) as value_last
+    from delphi.epoch_preps
+    order by timestamp
+)
+,deposits_address as (
+    select distinct io.address,p.pool_id from prep p
+    left join public.node_outputs o on p.box_id = o.box_id
+    left join public.node_transactions t on o.tx_id = t.id
+    left join public.node_inputs i on i.tx_id = t.id
+    left join public.node_outputs io on i.box_id = io.box_id
+    where p.value > p.value_last and io.value = p.value - p.value_last
+)
+update delphi.pools t
+set deposits_address = s.address
+from deposits_address s
+where s.pool_id = t.id and deposits_address is null
+$$;
 
 --
--- Name: discovery_live_epoch; Type: TABLE; Schema: delphi; Owner: -
+-- Name: etl(); Type: PROCEDURE; Schema: delphi; Owner: -
 --
 
-CREATE TABLE delphi.discovery_live_epoch (
-    live_epoch_address text NOT NULL,
-    token_id text NOT NULL,
-    token_name text,
-    token_description text
-);
-
-
---
--- Name: epoch_preps; Type: TABLE; Schema: delphi; Owner: -
---
-
-CREATE TABLE delphi.epoch_preps (
-    box_id text NOT NULL,
-    pool_id integer NOT NULL,
-    oracle_id integer NOT NULL,
-    "timestamp" bigint NOT NULL,
-    r4 text NOT NULL,
-    r5 text NOT NULL
-);
-
-
---
--- Name: live_epochs; Type: TABLE; Schema: delphi; Owner: -
---
-
-CREATE TABLE delphi.live_epochs (
-    box_id text NOT NULL,
-    pool_id integer NOT NULL,
-    oracle_id integer NOT NULL,
-    "timestamp" bigint NOT NULL,
-    r4 text NOT NULL,
-    r5 text NOT NULL,
-    r6 text NOT NULL
-);
-
-
---
--- Name: oracle_id_seq; Type: SEQUENCE; Schema: delphi; Owner: -
---
-
-CREATE SEQUENCE delphi.oracle_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: oracles; Type: TABLE; Schema: delphi; Owner: -
---
-
-CREATE TABLE delphi.oracles (
-    pool_id integer NOT NULL,
-    oracle_id integer DEFAULT nextval('delphi.oracle_id_seq'::regclass) NOT NULL,
-    participation_token_id text NOT NULL,
-    address text,
-    address_hash text NOT NULL
-);
-
-
---
--- Name: pools_id_seq; Type: SEQUENCE; Schema: delphi; Owner: -
---
-
-CREATE SEQUENCE delphi.pools_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: pools; Type: TABLE; Schema: delphi; Owner: -
---
-
-CREATE TABLE delphi.pools (
-    id integer DEFAULT nextval('delphi.pools_id_seq'::regclass) NOT NULL,
-    name text,
-    datapoint_address text NOT NULL,
-    epoch_prep_address text NOT NULL,
-    live_epoch_address text NOT NULL,
-    deposits_address text,
-    pool_nft_id text NOT NULL,
-    participant_token_id text NOT NULL,
-    deviation_range integer,
-    consensus_number integer
-);
-
-
---
--- Name: oracle_id_seq; Type: SEQUENCE SET; Schema: delphi; Owner: -
---
-
-SELECT pg_catalog.setval('delphi.oracle_id_seq', 1, true);
-
-
---
--- Name: pools_id_seq; Type: SEQUENCE SET; Schema: delphi; Owner: -
---
-
-SELECT pg_catalog.setval('delphi.pools_id_seq', 1, true);
-
-
---
--- Name: datapoints datapoints_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
---
-
-ALTER TABLE ONLY delphi.datapoints
-    ADD CONSTRAINT datapoints_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
-
-
---
--- Name: epoch_preps epoch_preps_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
---
-
-ALTER TABLE ONLY delphi.epoch_preps
-    ADD CONSTRAINT epoch_preps_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
-
-
---
--- Name: live_epochs live_epochs_box_id_pool_id_oracle_id; Type: CONSTRAINT; Schema: delphi; Owner: -
---
-
-ALTER TABLE ONLY delphi.live_epochs
-    ADD CONSTRAINT live_epochs_box_id_pool_id_oracle_id PRIMARY KEY (box_id, pool_id, oracle_id);
-
-
---
--- Name: oracles oracles_pkey; Type: CONSTRAINT; Schema: delphi; Owner: -
---
-
-ALTER TABLE ONLY delphi.oracles
-    ADD CONSTRAINT oracles_pkey PRIMARY KEY (pool_id, oracle_id);
-
-
---
--- Name: pools pools_pkey; Type: CONSTRAINT; Schema: delphi; Owner: -
---
-
-ALTER TABLE ONLY delphi.pools
-    ADD CONSTRAINT pools_pkey PRIMARY KEY (id);
-
-
---
--- Name: oracles oracles_pool_id_fkey; Type: FK CONSTRAINT; Schema: delphi; Owner: -
---
-
-ALTER TABLE ONLY delphi.oracles
-    ADD CONSTRAINT oracles_pool_id_fkey FOREIGN KEY (pool_id) REFERENCES delphi.pools(id);
+CREATE PROCEDURE delphi.etl()
+    LANGUAGE sql
+    AS $$
+call delphi.insert_discovery_datapoint();
+call delphi.insert_discovery_epoch_prep();
+call delphi.insert_discovery_live_epoch();
+call delphi.insert_pools();
+call delphi.insert_oracles();
+call delphi.insert_oracle_addresses();
+call delphi.insert_epoch_preps();
+call delphi.update_pool_deposits_addresses();
+call delphi.insert_live_epochs();
+call delphi.insert_pool_deposits();
+call delphi.insert_datapoints();
+$$
