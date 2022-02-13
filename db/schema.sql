@@ -1,3 +1,9 @@
+/*****
+Load time benchmarks
+@error: 20 minutes 
+@curbsideprophet: 1 hour 20 minutes on raspberry pi 4 w/ 4gb ram
+*****/
+
 --
 -- Name: delphi; Type: SCHEMA; Schema: -; Owner: -
 --
@@ -559,3 +565,5 @@ call delphi.insert_live_epochs();
 call delphi.insert_pool_deposits();
 call delphi.insert_datapoints();
 $$
+
+
