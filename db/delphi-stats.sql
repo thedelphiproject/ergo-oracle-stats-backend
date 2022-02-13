@@ -26,7 +26,7 @@ select dp.pool_id, p.name as pool_name, to_timestamp(dp.timestamp / 1000)::date 
 from delphi.datapoints dp
 join delphi.pools p on p.id = dp.pool_id 
 group by 1, 2, 3
-order by 1
+order by 1, 3
 limit 1000;
 
 -- timeseries of active oracles (oracles submitting a datapoint)
@@ -37,7 +37,7 @@ from delphi.datapoints dp
 join delphi.pools p on p.id = dp.pool_id 
 ) a 
 group by 1, 2, 3 
-order by 3
+order by 1, 3
 limit 1000;
 
 
@@ -45,12 +45,11 @@ limit 1000;
 
 /* ORACLE SPECIFIC DATA */
 -- number of datapoints submitted to date
-select dp.oracle_id, o.address, dp.pool_id, p.name as pool_name, count(*) as total_posted
+select dp.oracle_id, dp.pool_id, p.name as pool_name, count(*) as total_posted
 from delphi.datapoints dp 
 join delphi.pools p on p.id = dp.pool_id
-join delphi.oracles o on o.oracle_id = dp.oracle_id
-group by 1, 2, 3, 4
-order by 1 ;
+group by 1, 2, 3
+order by 2, 1;
 
 
 -- timeseries of datapoints
